@@ -4,8 +4,7 @@ const application = new tprime.Application();
 
 const tick = () => {
     application.tick();
-    // requestAnimationFrame(tick);
-    setTimeout(tick, 1000);
+    requestAnimationFrame(tick);
 };
 
 window.tprime = tprime;

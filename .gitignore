@@ -3,7 +3,3 @@
 **/*.rs.bk
 
 /node_modules/
-
-tprime.d.ts
-tprime.js
-tprime_bg.wasm
