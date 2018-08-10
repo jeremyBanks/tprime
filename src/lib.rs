@@ -2,6 +2,9 @@
 #![feature(rust_2018_preview, rust_2018_idioms, try_from)]
 #![warn(missing_docs, missing_debug_implementations)]
 
+#[macro_use] extern crate log;
+extern crate env_logger;
+
 use std::fmt;
 
 use rand;
@@ -97,8 +100,8 @@ pub struct Application {
     rng: rand_core::block::BlockRng<rand::prng::chacha::ChaChaCore>,
 }
 
-const WIDTH: usize = 128;
-const HEIGHT: usize = 128;
+const WIDTH: usize = 32;
+const HEIGHT: usize = 32;
 
 use rand::SeedableRng;
 use rand_core::block::BlockRng;
@@ -123,13 +126,36 @@ impl Application {
         let mut rng = BlockRng::new(ChaChaCore::from_seed(bs));
 
         let start_point = (
-            Range::new(0, WIDTH / 4).ind_sample(&mut rng),
-            Range::new(HEIGHT - HEIGHT / 4, HEIGHT).ind_sample(&mut rng));
+            Range::new(WIDTH - WIDTH / 16, WIDTH).ind_sample(&mut rng),
+            Range::new(0, HEIGHT / 16).ind_sample(&mut rng));
 
         let end_point = (
-            Range::new(WIDTH - WIDTH / 4, WIDTH).ind_sample(&mut rng),
-            Range::new(0, HEIGHT / 4).ind_sample(&mut rng)
+            Range::new(0, WIDTH / 16).ind_sample(&mut rng),
+            Range::new(HEIGHT - HEIGHT / 16, HEIGHT).ind_sample(&mut rng)
         );
+
+        set_text(r#"
+Welcome to my blog!
+
+It has a funny animated background.
+
+Tprime feature rust idioms try from seed bs bs bs let. Feature rust preview rust preview rust preview rust preview rust preview.
+
+Rust idioms try from seed bs b as u visited grid.
+
+Preview rust idioms try from seed bs bs b as isize. Rust idioms try from seed bs bs bs b as isize. Idioms try from warn missing debug clone copy pub fn tick.
+
+From warn missing docs missing debug clone copy pub fn clear.
+
+Warn missing debug implementations use extern c wasm bindgen js name. Missing debug implementations use extern c wasm bindgen impl fmt use. Docs missing docs missing docs missing debug implementations use js sys.
+
+Missing docs missing debug implementations use wasm bindgen js name clearcanvas.
+
+Debug implementations use wasm bindgen constructor pub fn set text string.
+
+Implementations use web sys date now as u let simple inertia.
+
+Rand use web sys date now as usize use extern crate. Wasm bindgen use js name clearcanvas pub fn clear canvas else. Bindgen constructor pub enum direction downright down downleft direction downright direction."#);
 
         Self {
             t: 0,
@@ -163,8 +189,8 @@ impl Application {
             return;
         }
 
-        for dx in -1..=1 {
-            for dy in -1..=1 {
+        for dx in vec![0, -1, 1].into_iter() {
+            for dy in vec![0, -1, 1].into_iter() {
                 if dx == 0 && dy == 0 {
                     continue;
                 }
@@ -198,11 +224,13 @@ impl Application {
             // this point has nothing to offer
             self.path.pop();
 
-            draw_line("#1E1E1E".into(), 2 + current_point.0 * 4, 2 + current_point.1 * 4, 2 + last_point.0 * 4, 2 + last_point.1 * 4);
+            draw_line("rgba(30, 30, 30, 0.75)".into(), 2 + current_point.0 * 32, 2 + current_point.1 * 32, 2 + last_point.0 * 32, 2 + last_point.1 * 32);
 
             // clear_canvas();
         } else {
-            let mut best_index = 0;
+            let random_index = Range::new(0, free_points.len()).ind_sample(&mut self.rng);
+
+            let mut best_index = random_index;
             let mut best_distance = 9999;
 
             for (i, ((x, y), _)) in free_points.iter().enumerate() {
@@ -213,13 +241,15 @@ impl Application {
                 }
             }
 
-            let mut inertial_index = 0;
+            let mut inertial_index = random_index;
             let mut best_inertia = 0;
 
             if self.path.len() >= 2 {
                 let last_point = self.path[self.path.len() - 2];
                 for (i, ((x, y), _)) in free_points.iter().enumerate() {
-                    let simple_inertia = (last_point.0 as isize - *x as isize).abs() + (last_point.1 as isize - *y as isize).abs();
+                    let simple_inertia =
+                        if (last_point.0 as isize - *x as isize).abs() == 2 { 1 } else { 0 } +
+                        if (last_point.1 as isize - *y as isize).abs() == 2 { 1 } else { 0 };
                     if simple_inertia > best_inertia {
                         best_inertia = simple_inertia;
                         inertial_index = i;
@@ -227,21 +257,19 @@ impl Application {
                 }
             }
 
-            let random_index = Range::new(0, free_points.len()).ind_sample(&mut self.rng);
-
             let first_index = 0;
 
-            let index = match self.t % (self.iteration + 1) {
+            let index = match self.t % 9 {
                 0..=4 => best_index,
-                5..=6 => random_index,
+                5 => random_index,
                 _ => inertial_index,
             };
             // 
             
             let (point, direction) = free_points[index];
 
-            let color = format!("rgb({}, {}, {})", cmp::min(self.iteration * 12, 256), self.t % 256, (self.t + 128) % 256).into();
-            draw_line(color, 2 + current_point.0 * 4, 2 + current_point.1 * 4, 2 + point.0 * 4, 2 + point.1 * 4);
+            let color = format!("rgb({}, {}, {})", (self.t as isize % 512 - 256).abs(), (self.iteration * 0x77) % 256, ((self.t as isize  - 256) % 512 - 256).abs()).into();
+            draw_line(color, 2 + current_point.0 * 32, 2 + current_point.1 * 32, 2 + point.0 * 32, 2 + point.1 * 32);
 
             self.path.push(point);
             self.visited[point] = true;

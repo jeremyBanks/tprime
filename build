@@ -1,4 +1,14 @@
-set -euxo pipefail;
-cargo +nightly build --target wasm32-unknown-unknown;
+set -veuo pipefail;
+### Build and test natively
+cargo +nightly build;
+cargo +nightly test;
+
+### Build ]for browser
+cargo +nightly build --lib --target wasm32-unknown-unknown;
 wasm-bindgen target/wasm32-unknown-unknown/debug/tprime.wasm --out-dir .;
+
+### Serve for browser
 yarn run webpack-dev-server -- --port 8080;
+
+### Open browser
+python -m webbrowser http://localhost:8080;

@@ -19,6 +19,11 @@ function getStringFromWasm(ptr, len) {
     return cachedDecoder.decode(getUint8Memory().subarray(ptr, ptr + len));
 }
 
+export function __wbg_setText_9d22b8a5cd3ae9c1(arg0, arg1) {
+    let varg0 = getStringFromWasm(arg0, arg1);
+    setText(varg0);
+}
+
 export function __wbg_drawLine_6dc70d87830823e3(arg0, arg1, arg2, arg3, arg4, arg5) {
     let varg0 = getStringFromWasm(arg0, arg1);
     
