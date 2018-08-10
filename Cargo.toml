@@ -1,0 +1,23 @@
+cargo-features = ["edition"]
+
+[package]
+edition = "2018"
+name = "tprime"
+version = "0.0.0"
+authors = ["Jeremy Banks <_@jeremy.ca>"]
+
+[lib]
+crate-type = ["cdylib"]
+
+[profile.release]
+debug = true
+
+[dependencies]
+wasm-bindgen = "0.2.15"
+js-sys = "0.2.0"
+web-sys = "0.0.1"
+serde="*"
+serde_derive="*"
+serdebug="*"
+rand="*"
+rand_core="*"
