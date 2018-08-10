@@ -27,6 +27,12 @@ use self::grid::Grid;
 extern "C" {
     #[wasm_bindgen(js_name=setText)]
     pub fn set_text(s: &str);
+
+    #[wasm_bindgen(js_name=clearCanvas)]
+    pub fn clear_canvas();
+
+    #[wasm_bindgen(js_name=drawLine)]
+    pub fn draw_line(color: String, x0: usize, y0: usize, x1: usize, y1: usize);
 }
 
 /// The eight directions between neighbouring cells.
@@ -68,21 +74,29 @@ impl Default for Direction {
 
 type usize2 = (usize, usize);
 
+mod ellipsis {
+    pub fn serialize<S>(_: impl std::any::Any, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
+        serializer.serialize_unit_struct("…")
+    }
+}
+
 /// The root application state.
 #[wasm_bindgen]
-#[derive(Debug)]
+#[derive(Serialize, SerDebug)]
 pub struct Application {
     t: u32,
     visited: Grid<bool>,
     path_direction: Grid<Direction>,
+    #[serde(with="ellipsis")]
     path: Vec<usize2>,
     start_point: usize2,
     end_point: usize2,
+    #[serde(with="ellipsis")]
     rng: rand_core::block::BlockRng<rand::prng::chacha::ChaChaCore>,
 }
 
-const WIDTH: usize = 32;
-const HEIGHT: usize = 64;
+const WIDTH: usize = 128;
+const HEIGHT: usize = 128;
 
 use rand::SeedableRng;
 use rand_core::block::BlockRng;
@@ -107,11 +121,11 @@ impl Application {
         let mut rng = BlockRng::new(ChaChaCore::from_seed(bs));
 
         let start_point = (
-            Range::new(0, WIDTH).ind_sample(&mut rng),
+            Range::new(0, WIDTH / 2).ind_sample(&mut rng),
             Range::new(HEIGHT - HEIGHT / 4, HEIGHT).ind_sample(&mut rng));
 
         let end_point = (
-            Range::new(0, WIDTH).ind_sample(&mut rng),
+            Range::new(WIDTH / 2, WIDTH).ind_sample(&mut rng),
             Range::new(0, HEIGHT / 4).ind_sample(&mut rng)
         );
 
@@ -135,7 +149,8 @@ impl Application {
         let mut adjacent_points = Vec::new();
 
         if current_point == self.end_point {
-            return;
+            // never be happy for now
+            // return;
         }
 
         for dx in -1..=1 {
@@ -168,25 +183,53 @@ impl Application {
         // set_text(&format!("{} adjacent, {} free", a, free_points.len()));
 
         if free_points.len() == 0 {
+            let last_point = self.path[self.path.len() - 2];
             // scratch this direction
-            self.path_direction[self.path[self.path.len() - 2]] = Direction::None;
+            self.path_direction[last_point] = Direction::None;
 
             // this point has nothing to offer
             self.path.pop();
+
+            draw_line("rgba(0, 0, 0, 0.5)".into(), 2 + current_point.0 * 4, 2 + current_point.1 * 4, 2 + last_point.0 * 4, 2 + last_point.1 * 4);
+
+            // clear_canvas();
         } else {
-            let index = Range::new(0, free_points.len()).ind_sample(&mut self.rng);
+            let mut best_index = 0;
+            let mut best_distance = 9999;
+
+            for (i, ((x, y), _)) in free_points.iter().enumerate() {
+                let simple_distance = (self.end_point.0 as isize - *x as isize).abs() + (self.end_point.1 as isize - *y as isize).abs();
+                if simple_distance < best_distance {
+                    best_distance = simple_distance;
+                    best_index = i;
+                }
+            }
+
+            let random_index = Range::new(0, free_points.len()).ind_sample(&mut self.rng);
+
+            let first_index = 0;
+
+            let index = match self.t % 4 {
+                0 => best_index,
+                1 => first_index,
+                _ => random_index,
+            };
+            // 
+            
             let (point, direction) = free_points[index];
+
+            draw_line("white".into(), 2 + current_point.0 * 4, 2 + current_point.1 * 4, 2 + point.0 * 4, 2 + point.1 * 4);
 
             self.path.push(point);
             self.visited[point] = true;
             self.path_direction[current_point] = direction;
         }
 
-        let mut text = String::new();
+        // let mut text = String::new();
         // text.push_str(&format!("{:#?}\n\n", self));
         // text.push_str(&format!("{}\n\n", self.visited));
-        text.push_str(&format!("{}\n\n", self.path_direction));
-        set_text(&text);
+        // text.push_str(&format!("{}\n\n", self.path_direction));
+        // set_text(&text);
         self.t += 1;
     }
 }

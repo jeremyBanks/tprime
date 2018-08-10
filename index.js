@@ -3,7 +3,9 @@ import * as tprime from "./tprime";
 const application = new tprime.Application();
 
 const tick = () => {
-    application.tick();
+    for (let i = 0; i < 16; i++) {
+        application.tick();
+    }
     requestAnimationFrame(tick);
 };
 

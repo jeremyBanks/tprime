@@ -18,9 +18,27 @@
         font-family: inherit;
         line-height: 14px;
         letter-spacing: 0;
+        border: 1px dashed rgba(255, 255, 255, 0.25);
+    }
+
+    canvas {
+        border: 1px dashed rgba(255, 255, 255, 0.25);
     }
 </style>
 
-<pre id="output"></pre>
-<script>setText = s => output.textContent = s;</script>
+<canvas id="canvas" width="512" height="512"></canvas>
+<pre id="pre"></pre>
+<script>
+    setText = s => pre.textContent = s;
+    g2d = canvas.getContext('2d');
+    clearCanvas = () => g2d.clearRect(0, 0, 512, 512);
+    drawLine = (color, x0, y0, x1, y1) => {
+        g2d.beginPath();
+        g2d.strokeStyle = color;
+        g2d.lineWidth = 2;
+        g2d.moveTo(x0, y0);
+        g2d.lineTo(x1, y1);
+        g2d.stroke();
+    };
+</script>
 <script src="./bootstrap.js"></script>

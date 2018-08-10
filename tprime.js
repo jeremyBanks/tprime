@@ -19,9 +19,13 @@ function getStringFromWasm(ptr, len) {
     return cachedDecoder.decode(getUint8Memory().subarray(ptr, ptr + len));
 }
 
-export function __wbg_setText_9d22b8a5cd3ae9c1(arg0, arg1) {
+export function __wbg_drawLine_6dc70d87830823e3(arg0, arg1, arg2, arg3, arg4, arg5) {
     let varg0 = getStringFromWasm(arg0, arg1);
-    setText(varg0);
+    
+    varg0 = varg0.slice();
+    wasm.__wbindgen_free(arg0, arg1 * 1);
+    
+    drawLine(varg0, arg2, arg3, arg4, arg5);
 }
 
 const __wbg_now_adfcbf9bd4d7b348_target = Date.now  || function() {
