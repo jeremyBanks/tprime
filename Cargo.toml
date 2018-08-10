@@ -7,19 +7,22 @@ version = "0.0.0"
 authors = ["Jeremy Banks <_@jeremy.ca>"]
 
 [lib]
+path = "src/web.rs"
 crate-type = ["cdylib"]
 
-[profile.release]
-debug = true
+[[bin]]
+name = "tprime"
+path = "src/bin.rs"
 
 [dependencies]
-wasm-bindgen = "0.2.15"
+wasm-bindgen = {version = "^0.2.15", features = ["serde-serialize"]}
 js-sys = "0.2.0"
 web-sys = "0.0.1"
-serde="*"
-serde_derive="*"
-serdebug="*"
-rand="*"
-rand_core="*"
-log="*"
-env_logger="*"
+serde="1.0.71"
+serde_derive="1.0.71"
+serdebug="1.0.5"
+rand="0.5.5"
+rand_core="0.2.1"
+log="0.4.3"
+env_logger="0.5.12"
+

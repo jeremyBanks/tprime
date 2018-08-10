@@ -1,18 +1,15 @@
+use std::fmt;
 use std::iter::Iterator;
 use std::ops::{Index, IndexMut};
-use std::fmt;
 
-mod ellipsis {
-    pub fn serialize<S>(_: impl std::any::Any, serializer: S) -> Result<S::Ok, S::Error> where S: serde::Serializer {
-        serializer.serialize_unit_struct("…")
-    }
-}
+use serde_derive::Serialize;
+use serdebug::SerDebug;
 
 #[derive(Serialize, SerDebug)]
 pub struct Grid<Item: Default + Clone> {
     width: usize,
     height: usize,
-    #[serde(with="ellipsis")]
+    #[serde(with = "super::ellipsis_serializer")]
     items: Vec<Item>,
 }
 

@@ -29,16 +29,16 @@ impl<State: Clone> History<State> {
             Some(state)
         }
     }
-    
+
     pub fn undo(&mut self) -> Option<Box<dyn Fn(&mut State)>> {
         if self.commands.len() == 0 {
             return None;
         }
-        
+
         let new_current = self.at_t(self.commands.len() - 1).unwrap();
         let removed_command = self.commands.pop().unwrap();
         self.current = new_current;
-        
+
         Some(removed_command)
     }
 }

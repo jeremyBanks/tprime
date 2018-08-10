@@ -42,6 +42,8 @@
     drawLine = (color, x0, y0, x1, y1) => {
         g2d.beginPath();
         g2d.strokeStyle = color;
+        g2d.lineCap = 'round';
+        g2d.lineJoin = 'round';
         g2d.lineWidth = 3.5;
         g2d.moveTo(x0, y0);
         g2d.lineTo(x1, y1);
