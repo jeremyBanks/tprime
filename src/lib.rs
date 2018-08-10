@@ -6,6 +6,8 @@ use std::fmt;
 
 use rand;
 
+use std::cmp;
+
 use wasm_bindgen::prelude::wasm_bindgen;
 use js_sys;
 use web_sys;
@@ -85,8 +87,8 @@ mod ellipsis {
 #[derive(Serialize, SerDebug)]
 pub struct Application {
     t: u32,
+    iteration: u32,
     visited: Grid<bool>,
-    path_direction: Grid<Direction>,
     #[serde(with="ellipsis")]
     path: Vec<usize2>,
     start_point: usize2,
@@ -121,18 +123,18 @@ impl Application {
         let mut rng = BlockRng::new(ChaChaCore::from_seed(bs));
 
         let start_point = (
-            Range::new(0, WIDTH / 2).ind_sample(&mut rng),
+            Range::new(0, WIDTH / 4).ind_sample(&mut rng),
             Range::new(HEIGHT - HEIGHT / 4, HEIGHT).ind_sample(&mut rng));
 
         let end_point = (
-            Range::new(WIDTH / 2, WIDTH).ind_sample(&mut rng),
+            Range::new(WIDTH - WIDTH / 4, WIDTH).ind_sample(&mut rng),
             Range::new(0, HEIGHT / 4).ind_sample(&mut rng)
         );
 
         Self {
             t: 0,
+            iteration: 0,
             visited: Grid::new(WIDTH, HEIGHT),
-            path_direction: Grid::new(WIDTH, HEIGHT),
             path: vec![start_point],
             start_point,
             end_point,
@@ -149,8 +151,16 @@ impl Application {
         let mut adjacent_points = Vec::new();
 
         if current_point == self.end_point {
-            // never be happy for now
-            // return;
+            self.iteration += 1;
+
+            // start again, in the opposite direction
+            let t = self.end_point;
+            self.end_point = self.start_point;
+            self.start_point = t;
+
+            self.visited = Grid::new(WIDTH, HEIGHT);
+
+            return;
         }
 
         for dx in -1..=1 {
@@ -184,13 +194,11 @@ impl Application {
 
         if free_points.len() == 0 {
             let last_point = self.path[self.path.len() - 2];
-            // scratch this direction
-            self.path_direction[last_point] = Direction::None;
 
             // this point has nothing to offer
             self.path.pop();
 
-            draw_line("rgba(0, 0, 0, 0.5)".into(), 2 + current_point.0 * 4, 2 + current_point.1 * 4, 2 + last_point.0 * 4, 2 + last_point.1 * 4);
+            draw_line("#1E1E1E".into(), 2 + current_point.0 * 4, 2 + current_point.1 * 4, 2 + last_point.0 * 4, 2 + last_point.1 * 4);
 
             // clear_canvas();
         } else {
@@ -205,30 +213,43 @@ impl Application {
                 }
             }
 
+            let mut inertial_index = 0;
+            let mut best_inertia = 0;
+
+            if self.path.len() >= 2 {
+                let last_point = self.path[self.path.len() - 2];
+                for (i, ((x, y), _)) in free_points.iter().enumerate() {
+                    let simple_inertia = (last_point.0 as isize - *x as isize).abs() + (last_point.1 as isize - *y as isize).abs();
+                    if simple_inertia > best_inertia {
+                        best_inertia = simple_inertia;
+                        inertial_index = i;
+                    }
+                }
+            }
+
             let random_index = Range::new(0, free_points.len()).ind_sample(&mut self.rng);
 
             let first_index = 0;
 
-            let index = match self.t % 4 {
-                0 => best_index,
-                1 => first_index,
-                _ => random_index,
+            let index = match self.t % (self.iteration + 1) {
+                0..=4 => best_index,
+                5..=6 => random_index,
+                _ => inertial_index,
             };
             // 
             
             let (point, direction) = free_points[index];
 
-            draw_line("white".into(), 2 + current_point.0 * 4, 2 + current_point.1 * 4, 2 + point.0 * 4, 2 + point.1 * 4);
+            let color = format!("rgb({}, {}, {})", cmp::min(self.iteration * 12, 256), self.t % 256, (self.t + 128) % 256).into();
+            draw_line(color, 2 + current_point.0 * 4, 2 + current_point.1 * 4, 2 + point.0 * 4, 2 + point.1 * 4);
 
             self.path.push(point);
             self.visited[point] = true;
-            self.path_direction[current_point] = direction;
         }
 
         // let mut text = String::new();
         // text.push_str(&format!("{:#?}\n\n", self));
         // text.push_str(&format!("{}\n\n", self.visited));
-        // text.push_str(&format!("{}\n\n", self.path_direction));
         // set_text(&text);
         self.t += 1;
     }
