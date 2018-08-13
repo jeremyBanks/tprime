@@ -29,14 +29,18 @@
     }
 
     canvas {
-        display: none;
+        /* display: none; */
+        left: calc((100vw - 100vh) / 2);
+        height: calc(100vh - 8px);
+        position: absolute;
+        top: 4px;
+        z-index: -100;
     }
 </style>
 
 <canvas id="canvas" width="1024" height="1024"></canvas>
-<pre id="pre"></pre>
 <script>
-    setText = s => pre.textContent = s;
+    setText = s => {};
     g2d = canvas.getContext('2d');
     clearCanvas = () => g2d.clearRect(0, 0, 1024, 1024);
     drawLine = (color, x0, y0, x1, y1) => {
@@ -49,7 +53,7 @@
         g2d.lineTo(x1, y1);
         g2d.stroke();
 
-        document.querySelector('html').style.backgroundImage = `url(${canvas.toDataURL("image/png")})`;
+        // document.querySelector('html').style.backgroundImage = `url(${canvas.toDataURL("image/png")})`;
     };
 </script>
 <script src="./bootstrap.js"></script>
