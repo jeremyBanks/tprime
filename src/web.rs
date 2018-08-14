@@ -94,7 +94,7 @@ impl Application {
                     color: "#4B8",
                     width: 3.5,
                     points: vec![
-                        (0., 0.),
+                        (Range::new(0., 100.).ind_sample(&mut self.rng), 0.),
                         (100., 100.),
                         (0., 300.),
                     ]
