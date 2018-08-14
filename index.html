@@ -1,59 +1,129 @@
 <!doctype html>
 <meta charset="utf-8">
+<title></title>
+<canvas></canvas>
+<pre></pre>
 <style>
     * {
-        padding: 0;
         margin: 0;
+        padding: 0;
     }
 
-    html {
-        background-color: #1E1E1E;
-        background-position: center;
-        background-size: 256px;
-        color: #E8E8E8;
-        min-height: 100%;
+    html, body {
+        height: 100%;
     }
 
     body {
-        font: 14px monospace;
-        padding: 0.5em;
-    }
-
-    pre {
-        max-width: 40em;
-        margin: 20px;
-        background: rgba(0, 0, 0, 50%);
-        padding: 15px 30px;
-        white-space: pre-wrap;
-        margin-bottom: 600px;
+        background: #181818;
+        color: #F8F8F8;
+        width: auto;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
     }
 
     canvas {
-        /* display: none; */
-        left: calc((100vw - 100vh) / 2);
-        height: calc(100vh - 8px);
-        position: absolute;
-        top: 4px;
-        z-index: -100;
+        cursor: pointer;
+        max-height: 93.75vw;
+        max-width: 93.75vh;
+    }
+
+    pre {
+        max-width: 93.75vw;
+        width: 60em;
+        white-space: pre-wrap;
     }
 </style>
+<script type="module">
+    window.error = (...args) => console.error(...args);
+    window.warn = (...args) => console.warn(...args);
+    window.info = (...args) => console.info(...args);
+    window.debug = (...args) => console.debug(...args);
 
-<canvas id="canvas" width="1024" height="1024"></canvas>
-<script>
-    setText = s => {};
-    g2d = canvas.getContext('2d');
-    clearCanvas = () => g2d.clearRect(0, 0, 1024, 1024);
-    drawLine = (color, x0, y0, x1, y1) => {
+    window.setTitle = str => document.title = str;
+
+    const style = document.querySelector('style');
+    window.setStyle = str => style.textContent = str;
+
+    const pre = document.querySelector('pre');
+    window.setText = str => pre.textContent = str;
+
+    const canvas = document.querySelector('canvas');
+    canvas.onclick = () => {
+        // The window needs to be opened synchronously in the click handler or
+        // else it gets blocked, but we can only get the blob URL asyncronously.
+        let child = open('data:');
+        canvas.toBlob(blob => {
+            child.location = URL.createObjectURL(blob);
+        });
+    };
+    const g2d = canvas.getContext('2d');
+    {
+        // Default (implicit error indicator) content for canvas.
+        canvas.height = canvas.width = 128;
+        g2d.fillStyle = '#302030';
+        g2d.strokeStyle = '#C04020'
+        g2d.lineWidth = 8;
+        g2d.fillRect(0, 0, canvas.width, canvas.height);
         g2d.beginPath();
-        g2d.strokeStyle = color;
-        g2d.lineCap = 'round';
-        g2d.lineJoin = 'round';
-        g2d.lineWidth = 3.5;
-        g2d.moveTo(x0, y0);
-        g2d.lineTo(x1, y1);
+        g2d.moveTo(32, 32);
+        g2d.lineTo(96, 96);
+        g2d.moveTo(96, 32);
+        g2d.lineTo(32, 96);
         g2d.stroke();
+    }
+    window.startApplication = Application => {
+        const application = new Application();
 
-        // document.querySelector('html').style.backgroundImage = `url(${canvas.toDataURL("image/png")})`;
+        const tick = () => {
+            const {
+                timeout,
+                lines,
+                width,
+                height,
+            } = application.tick();
+
+            if (canvas.width !== width) {
+                canvas.width = width;
+            }
+
+            if (canvas.height !== height) {
+                canvas.height = height;
+            }
+
+            if (lines != null) {
+                g2d.clearRect(0, 0, width, height);
+                g2d.lineCap = 'round';
+                g2d.lineJoin = 'round';
+                for (const {
+                    color,
+                    width,
+                    points,
+                } of lines) {
+                    g2d.beginPath();
+                    g2d.strokeStyle = color;
+                    g2d.lineWidth = width;
+                    for (let i = 0; i < points.length; i++) {
+                        const [x, y] = points[i];
+                        if (i === 0) {
+                            g2d.moveTo(x, y);
+                        } else {
+                            g2d.lineTo(x, y);
+                        }
+                    }
+                    g2d.stroke();
+                }
+            }
+
+            if (timeout == 0) {
+                requestAnimationFrame(tick);
+            } else {
+                setTimeout(tick, timeout);
+            }
+        };
+
+        requestAnimationFrame(tick);
     };
 </script>
 <script src="./bootstrap.js"></script>

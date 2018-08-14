@@ -4,6 +4,6 @@ constructor(...args: any[]);
 free(): void;
 static  new(): Application;
 
- tick(): void;
+ tick(): any;
 
 }

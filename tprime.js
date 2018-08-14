@@ -19,22 +19,79 @@ function getStringFromWasm(ptr, len) {
     return cachedDecoder.decode(getUint8Memory().subarray(ptr, ptr + len));
 }
 
+export function __wbg_setTitle_c103b36468a67b49(arg0, arg1) {
+    let varg0 = getStringFromWasm(arg0, arg1);
+    setTitle(varg0);
+}
+
 export function __wbg_setText_9d22b8a5cd3ae9c1(arg0, arg1) {
     let varg0 = getStringFromWasm(arg0, arg1);
     setText(varg0);
 }
 
-export function __wbg_clearCanvas_96e4c783208cb9c4() {
-    clearCanvas();
+const stack = [];
+
+const slab = [{ obj: undefined }, { obj: null }, { obj: true }, { obj: false }];
+
+function getObject(idx) {
+    if ((idx & 1) === 1) {
+        return stack[idx >> 1];
+    } else {
+        const val = slab[idx >> 1];
+        
+        return val.obj;
+        
+    }
 }
 
-export function __wbg_drawLine_6dc70d87830823e3(arg0, arg1, arg2, arg3, arg4, arg5) {
+let slab_next = slab.length;
+
+function dropRef(idx) {
+    
+    idx = idx >> 1;
+    if (idx < 4) return;
+    let obj = slab[idx];
+    
+    obj.cnt -= 1;
+    if (obj.cnt > 0) return;
+    
+    // If we hit 0 then free up our space in the slab
+    slab[idx] = slab_next;
+    slab_next = idx;
+}
+
+function takeObject(idx) {
+    const ret = getObject(idx);
+    dropRef(idx);
+    return ret;
+}
+
+const __wbg_error_f2a0bd9ef53b7c1c_target = console.error;
+
+export function __wbg_error_f2a0bd9ef53b7c1c(arg0, arg1) {
     let varg0 = getStringFromWasm(arg0, arg1);
-    
-    varg0 = varg0.slice();
-    wasm.__wbindgen_free(arg0, arg1 * 1);
-    
-    drawLine(varg0, arg2, arg3, arg4, arg5);
+    __wbg_error_f2a0bd9ef53b7c1c_target(varg0);
+}
+
+const __wbg_warn_95d0935fb9ff30d1_target = console.warn;
+
+export function __wbg_warn_95d0935fb9ff30d1(arg0, arg1) {
+    let varg0 = getStringFromWasm(arg0, arg1);
+    __wbg_warn_95d0935fb9ff30d1_target(varg0);
+}
+
+const __wbg_info_f618f84201099909_target = console.info;
+
+export function __wbg_info_f618f84201099909(arg0, arg1) {
+    let varg0 = getStringFromWasm(arg0, arg1);
+    __wbg_info_f618f84201099909_target(varg0);
+}
+
+const __wbg_debug_5df5ad4c879e8016_target = console.debug;
+
+export function __wbg_debug_5df5ad4c879e8016(arg0, arg1) {
+    let varg0 = getStringFromWasm(arg0, arg1);
+    __wbg_debug_5df5ad4c879e8016_target(varg0);
 }
 
 const __wbg_now_adfcbf9bd4d7b348_target = Date.now  || function() {
@@ -51,7 +108,7 @@ class ConstructorToken {
     }
 }
 /**
-* The root application state.
+* The root application state, exposed to JavaScript.
 */
 export class Application {
     
@@ -82,15 +139,29 @@ export class Application {
         return Application.__construct(wasm.application_new());
     }
     /**
-    * A new frame!
-    * @returns {void}
+    * @returns {any}
     */
     tick() {
         if (this.ptr === 0) {
             throw new Error('Attempt to use a moved value');
         }
-        return wasm.application_tick(this.ptr);
+        return takeObject(wasm.application_tick(this.ptr));
     }
+}
+
+function addHeapObject(obj) {
+    if (slab_next === slab.length) slab.push(slab.length + 1);
+    const idx = slab_next;
+    const next = slab[idx];
+    
+    slab_next = next;
+    
+    slab[idx] = { obj, cnt: 1 };
+    return idx << 1;
+}
+
+export function __wbindgen_json_parse(ptr, len) {
+    return addHeapObject(JSON.parse(getStringFromWasm(ptr, len)));
 }
 
 export function __wbindgen_throw(ptr, len) {
