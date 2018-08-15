@@ -77,12 +77,14 @@ impl Application {
         set_title("t′");
         debug!("Logging to web console at level {:?}.", log::max_level());
 
-        let timestamp = js_sys::Date::now() as u32;
+        let timestamp_js = js_sys::Date::now();
+
+        let timestamp = timestamp_js as u64;
         let mut seed = [0u8; 32];
-        seed[0] = (timestamp >> (8 * 0)) as u8;
-        seed[1] = (timestamp >> (8 * 1)) as u8;
-        seed[2] = (timestamp >> (8 * 2)) as u8;
-        seed[3] = (timestamp >> (8 * 3)) as u8;
+        for i in 0..8 {
+            seed[i] = (timestamp >> (8 * i)) as u8;
+        }
+        debug!("Seeding RNG with {:?} from timestamp {}.", seed, timestamp);
         let rng = BlockRng::new(ChaChaCore::from_seed(seed));
 
         let width = 32;
@@ -97,14 +99,14 @@ impl Application {
         let greedy: StrategyFn = |neighbours, target, grid| {
             let mut min_distance = u32::max_value();
             for neighbour in neighbours.iter() {
-                let distance = grid.distance(*neighbour, target);
+                let distance = grid.min_distance(*neighbour, target);
                 if distance < min_distance {
                     min_distance = distance;
                 }
             }
             neighbours
                 .into_iter()
-                .filter(|neighbour| min_distance == grid.distance(*neighbour, target))
+                .filter(|neighbour| min_distance == grid.min_distance(*neighbour, target))
                 .collect()
         };
 
@@ -118,7 +120,7 @@ impl Application {
             let mut grid = square_grid::SquareGrid::<walker::NodeInfo>::new(width, height);
 
             for x in (width / 2 - sixteenth * 7)..=(width / 2 + sixteenth * 2) {
-                for y in (height / 2 - sixteenth * 7)..=(height / 2 + sixteenth * 2) {
+                for y in 0..=(height / 2 + sixteenth * 2) {
                     if x < width / 2 + sixteenth && y < height / 2 + sixteenth {
                         continue;
                     }
@@ -134,13 +136,13 @@ impl Application {
                 grid_with_hole(),
                 (sixteenth, sixteenth),
                 (width - sixteenth - 1, height - sixteenth - 1),
-                clockwise,
+                greedy,
             ),
             walker::Walker::new(
                 grid_with_hole(),
                 (sixteenth, sixteenth),
                 (width - sixteenth - 1, height - sixteenth - 1),
-                mindless,
+                greedy,
             ),
             walker::Walker::new(
                 grid_with_hole(),

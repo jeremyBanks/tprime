@@ -48,7 +48,7 @@ impl<Item: Default + Clone> Grid<(usize, usize)> for SquareGrid<Item> {
         v
     }
 
-    fn distance(&self, a: (usize, usize), b: (usize, usize)) -> u32 {
+    fn min_distance(&self, a: (usize, usize), b: (usize, usize)) -> u32 {
         let (a_x, a_y) = a;
         let (b_x, b_y) = b;
         let x_distance =
