@@ -8,14 +8,18 @@ use self::mods::*;
 use serde_derive::Serialize;
 use serdebug::SerDebug;
 
-use log::{Log, log, trace, debug, info, warn, error};
+use std::convert::TryFrom;
 
-use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
+use log::{debug, error, info, log, trace, warn, Log};
+
+use self::mods::grid::Grid;
+
 use js_sys;
-use rand_core::block::BlockRng;
-use rand::SeedableRng;
+use rand::distributions::{Distribution, Range};
 use rand::prng::chacha::ChaChaCore;
-
+use rand::SeedableRng;
+use rand_core::block::BlockRng;
+use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 #[derive(Serialize, SerDebug)]
 struct Output<'a> {
@@ -48,13 +52,17 @@ extern "C" {
 #[wasm_bindgen]
 #[derive(Serialize, SerDebug)]
 pub struct Application {
+    render_scale: u32,
+    width: u32,
+    height: u32,
+
+    #[serde(with = "mods::ellipsis_serializer")]
+    walkers:
+        Vec<mods::walker::Walker<(usize, usize), square_grid::SquareGrid<mods::walker::NodeInfo>>>,
+
     #[serde(with = "mods::ellipsis_serializer")]
     rng: BlockRng<ChaChaCore>,
 }
-
-const line_scale: u32 = 8;
-const width: u32 = 64;
-const height: u32 = 64;
 
 static LOGGER: &'static (dyn log::Log + 'static) = &WebConsoleLogger;
 
@@ -66,8 +74,8 @@ impl Application {
         log::set_logger(LOGGER);
         log::set_max_level(log::LevelFilter::Trace);
 
-        set_title("t'");
-        set_text(&format!("Logging to web console at level {}.", log::max_level()));
+        set_title("t′");
+        debug!("Logging to web console at level {:?}.", log::max_level());
 
         let timestamp = js_sys::Date::now() as u32;
         let mut seed = [0u8; 32];
@@ -77,46 +85,138 @@ impl Application {
         seed[3] = (timestamp >> (8 * 3)) as u8;
         let rng = BlockRng::new(ChaChaCore::from_seed(seed));
 
+        let width = 32;
+        let height = 32;
+
+        type StrategyFn = fn(
+            neighbours: Vec<(usize, usize)>,
+            target: (usize, usize),
+            grid: &square_grid::SquareGrid<walker::NodeInfo>,
+        ) -> Vec<(usize, usize)>;
+
+        let greedy: StrategyFn = |neighbours, target, grid| {
+            let mut min_distance = u32::max_value();
+            for neighbour in neighbours.iter() {
+                let distance = grid.distance(*neighbour, target);
+                if distance < min_distance {
+                    min_distance = distance;
+                }
+            }
+            neighbours
+                .into_iter()
+                .filter(|neighbour| min_distance == grid.distance(*neighbour, target))
+                .collect()
+        };
+
+        let mindless: StrategyFn = |neighbours, _, _| neighbours;
+
+        let clockwise: StrategyFn = |neighbours, _, _| vec![neighbours[0]];
+
+        let sixteenth = width.min(height) / 16;
+
+        let grid_with_hole = || {
+            let mut grid = square_grid::SquareGrid::<walker::NodeInfo>::new(width, height);
+
+            for x in (width / 2 - sixteenth * 2)..=(width / 2 + sixteenth * 2) {
+                for y in (height / 2 - sixteenth * 2)..=(height / 2 + sixteenth * 2) {
+                    if x < width / 2 && y < height / 2 {
+                        continue;
+                    }
+                    grid[(x, y)].visited = true;
+                }
+            }
+
+            grid
+        };
+
+        let walkers = vec![
+            walker::Walker::new(
+                grid_with_hole(),
+                (sixteenth, sixteenth),
+                (width - sixteenth - 1, height - sixteenth - 1),
+                clockwise,
+            ),
+            walker::Walker::new(
+                grid_with_hole(),
+                (sixteenth, sixteenth),
+                (width - sixteenth - 1, height - sixteenth - 1),
+                mindless,
+            ),
+            walker::Walker::new(
+                grid_with_hole(),
+                (sixteenth, sixteenth),
+                (width - sixteenth - 1, height - sixteenth - 1),
+                greedy,
+            ),
+        ];
+
         Application {
-            rng
+            rng,
+            walkers,
+            width: u32::try_from(width).unwrap(),
+            height: u32::try_from(height).unwrap(),
+            render_scale: 32,
         }
     }
 
     pub fn tick(&mut self) -> JsValue {
-        debug!("tick!");
+        let width = self.width * self.render_scale;
+        let height = self.height * self.render_scale;
+        let mut any_running = false;
+
+        for ref mut walker in self.walkers.iter_mut() {
+            let warp_factor = 1;
+            for _ in 0..(warp_factor - 1) {
+                walker.step(&mut self.rng);
+            }
+
+            let running = walker.step(&mut self.rng);
+            if running {
+                any_running = true;
+            }
+        }
 
         JsValue::from_serde(&Output {
-            timeout: 1000,
-            width: width * line_scale,
-            height: height * line_scale,
-            lines: vec![
-                OutputLine {
-                    color: "#4B8",
-                    width: 3.5,
-                    points: vec![
-                        (Range::new(0., 100.).ind_sample(&mut self.rng), 0.),
-                        (100., 100.),
-                        (0., 300.),
-                    ]
-                }
-            ],
+            timeout: if any_running { 0 } else { 4000 },
+            width,
+            height,
+            lines: self
+                .walkers
+                .iter()
+                .enumerate()
+                .map(|(i, walker)| OutputLine {
+                    color: [
+                        "rgba(200, 100, 50, 0.875)",
+                        "rgba(100, 50, 200, 0.875)",
+                        "rgba(50, 200, 100, 0.875)",
+                    ][i % 3],
+                    width: 0.5 * (self.render_scale as f64),
+                    points: walker
+                        .current_path()
+                        .iter()
+                        .map(|(x, y)| {
+                            let xp = ((*x as u32) * self.render_scale) as f64;
+                            let yp = ((*y as u32) * self.render_scale) as f64;
+                            (xp, yp)
+                        }).collect(),
+                }).collect(),
         }).unwrap()
     }
 }
 
-
-pub struct WebConsoleLogger;
+#[derive(Debug)]
+struct WebConsoleLogger;
 
 #[wasm_bindgen]
 extern "C" {
     #[wasm_bindgen(js_namespace=console, js_name=error)]
-    pub fn js_error(s: &str);
+    pub fn js_error(a: &str, b: &str, c: &str);
     #[wasm_bindgen(js_namespace=console, js_name=warn)]
-    pub fn js_warn(s: &str);
+    pub fn js_warn(a: &str, b: &str, c: &str);
     #[wasm_bindgen(js_namespace=console, js_name=info)]
-    pub fn js_info(s: &str);
+    pub fn js_info(a: &str, b: &str, c: &str);
     #[wasm_bindgen(js_namespace=console, js_name=debug)]
-    pub fn js_debug(s: &str);
+    pub fn js_debug(a: &str, b: &str, c: &str);
 }
 
 impl log::Log for WebConsoleLogger {
@@ -129,12 +229,16 @@ impl log::Log for WebConsoleLogger {
             return;
         }
 
+        let a = format!("%c[{}]", record.metadata().target());
+        let b = "font-weight: bold;";
+        let c = record.args().to_string();
+
         use log::Level::*;
         match record.level() {
-            Error => js_error(&record.args().to_string()),
-            Warn => js_warn(&record.args().to_string()),
-            Info => js_info(&record.args().to_string()),
-            Debug | Trace => js_debug(&record.args().to_string()),
+            Error => js_error(&a, &b, &c),
+            Warn => js_warn(&a, &b, &c),
+            Info => js_info(&a, &b, &c),
+            Debug | Trace => js_debug(&a, &b, &c),
         }
     }
 

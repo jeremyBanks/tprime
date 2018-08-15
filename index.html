@@ -1,5 +1,6 @@
 <!doctype html>
 <meta charset="utf-8">
+<link rel="icon">
 <title></title>
 <canvas></canvas>
 <pre></pre>
@@ -25,8 +26,10 @@
 
     canvas {
         cursor: pointer;
-        max-height: 93.75vw;
-        max-width: 93.75vh;
+        width: 93.75vh;
+        max-height: 93.75vh;
+        max-width: 93.75vw;
+        image-rendering: pixelated;
     }
 
     pre {
@@ -50,12 +53,15 @@
     window.setText = str => pre.textContent = str;
 
     const canvas = document.querySelector('canvas');
+    const icon = document.querySelector('link[rel="icon"]');
     canvas.onclick = () => {
         // The window needs to be opened synchronously in the click handler or
         // else it gets blocked, but we can only get the blob URL asyncronously.
-        let child = open('data:');
+        const child = open('data:');
         canvas.toBlob(blob => {
-            child.location = URL.createObjectURL(blob);
+            const url = URL.createObjectURL(blob);
+            icon.href = url;
+            child.location = url;
         });
     };
     const g2d = canvas.getContext('2d');

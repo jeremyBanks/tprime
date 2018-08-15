@@ -5,11 +5,11 @@
 use env_logger;
 
 mod mods;
-use self::mods::*;
+use self::mods::square_grid::SquareGrid;
 
 fn main() {
     env_logger::init();
 
-    let x = grid::Grid::<bool>::new(2, 2);
+    let x = SquareGrid::<bool>::new(2, 2);
     println!("hello world {}", x);
 }

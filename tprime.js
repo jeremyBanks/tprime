@@ -24,11 +24,6 @@ export function __wbg_setTitle_c103b36468a67b49(arg0, arg1) {
     setTitle(varg0);
 }
 
-export function __wbg_setText_9d22b8a5cd3ae9c1(arg0, arg1) {
-    let varg0 = getStringFromWasm(arg0, arg1);
-    setText(varg0);
-}
-
 const stack = [];
 
 const slab = [{ obj: undefined }, { obj: null }, { obj: true }, { obj: false }];
@@ -68,30 +63,38 @@ function takeObject(idx) {
 
 const __wbg_error_f2a0bd9ef53b7c1c_target = console.error;
 
-export function __wbg_error_f2a0bd9ef53b7c1c(arg0, arg1) {
+export function __wbg_error_f2a0bd9ef53b7c1c(arg0, arg1, arg2, arg3, arg4, arg5) {
     let varg0 = getStringFromWasm(arg0, arg1);
-    __wbg_error_f2a0bd9ef53b7c1c_target(varg0);
+    let varg2 = getStringFromWasm(arg2, arg3);
+    let varg4 = getStringFromWasm(arg4, arg5);
+    __wbg_error_f2a0bd9ef53b7c1c_target(varg0, varg2, varg4);
 }
 
 const __wbg_warn_95d0935fb9ff30d1_target = console.warn;
 
-export function __wbg_warn_95d0935fb9ff30d1(arg0, arg1) {
+export function __wbg_warn_95d0935fb9ff30d1(arg0, arg1, arg2, arg3, arg4, arg5) {
     let varg0 = getStringFromWasm(arg0, arg1);
-    __wbg_warn_95d0935fb9ff30d1_target(varg0);
+    let varg2 = getStringFromWasm(arg2, arg3);
+    let varg4 = getStringFromWasm(arg4, arg5);
+    __wbg_warn_95d0935fb9ff30d1_target(varg0, varg2, varg4);
 }
 
 const __wbg_info_f618f84201099909_target = console.info;
 
-export function __wbg_info_f618f84201099909(arg0, arg1) {
+export function __wbg_info_f618f84201099909(arg0, arg1, arg2, arg3, arg4, arg5) {
     let varg0 = getStringFromWasm(arg0, arg1);
-    __wbg_info_f618f84201099909_target(varg0);
+    let varg2 = getStringFromWasm(arg2, arg3);
+    let varg4 = getStringFromWasm(arg4, arg5);
+    __wbg_info_f618f84201099909_target(varg0, varg2, varg4);
 }
 
 const __wbg_debug_5df5ad4c879e8016_target = console.debug;
 
-export function __wbg_debug_5df5ad4c879e8016(arg0, arg1) {
+export function __wbg_debug_5df5ad4c879e8016(arg0, arg1, arg2, arg3, arg4, arg5) {
     let varg0 = getStringFromWasm(arg0, arg1);
-    __wbg_debug_5df5ad4c879e8016_target(varg0);
+    let varg2 = getStringFromWasm(arg2, arg3);
+    let varg4 = getStringFromWasm(arg4, arg5);
+    __wbg_debug_5df5ad4c879e8016_target(varg0, varg2, varg4);
 }
 
 const __wbg_now_adfcbf9bd4d7b348_target = Date.now  || function() {
