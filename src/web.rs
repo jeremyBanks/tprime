@@ -119,9 +119,9 @@ impl Application {
         let grid_with_hole = || {
             let mut grid = square_grid::SquareGrid::<walker::NodeInfo>::new(width, height);
 
-            for x in (width / 2 - sixteenth * 7)..=(width / 2 + sixteenth * 2) {
-                for y in 0..=(height / 2 + sixteenth * 2) {
-                    if x < width / 2 + sixteenth && y < height / 2 + sixteenth {
+            for x in (width / 2 - sixteenth * 6)..=(width / 2 + sixteenth * 6) {
+                for y in 0..=(height / 2 + sixteenth * 5) {
+                    if x < width / 2 + sixteenth * 5 && y < height / 2 + sixteenth * 4 {
                         continue;
                     }
                     grid[(x, y)].visited = true;
@@ -132,6 +132,18 @@ impl Application {
         };
 
         let walkers = vec![
+            walker::Walker::new(
+                grid_with_hole(),
+                (sixteenth, sixteenth),
+                (width - sixteenth - 1, height - sixteenth - 1),
+                clockwise,
+            ),
+            walker::Walker::new(
+                grid_with_hole(),
+                (sixteenth, sixteenth),
+                (width - sixteenth - 1, height - sixteenth - 1),
+                mindless,
+            ),
             walker::Walker::new(
                 grid_with_hole(),
                 (sixteenth, sixteenth),
@@ -188,10 +200,12 @@ impl Application {
                 .enumerate()
                 .map(|(i, walker)| OutputLine {
                     color: [
+                        "rgba(0, 0, 100, 0.875)",
+                        "rgba(100, 0, 0, 0.875)",
                         "rgba(200, 100, 50, 0.875)",
                         "rgba(100, 50, 200, 0.875)",
                         "rgba(50, 200, 100, 0.875)",
-                    ][i % 3],
+                    ][i % 5],
                     width: 0.5 * (self.render_scale as f64),
                     points: walker
                         .current_path()
