@@ -110,16 +110,16 @@ impl Application {
 
         let mindless: StrategyFn = |neighbours, _, _| neighbours;
 
-        let clockwise: StrategyFn = |neighbours, _, _| vec![neighbours[0]];
+        let clockwise: StrategyFn = |neighbours, _, _| neighbours.into_iter().take(1).collect();
 
         let sixteenth = width.min(height) / 16;
 
         let grid_with_hole = || {
             let mut grid = square_grid::SquareGrid::<walker::NodeInfo>::new(width, height);
 
-            for x in (width / 2 - sixteenth * 2)..=(width / 2 + sixteenth * 2) {
-                for y in (height / 2 - sixteenth * 2)..=(height / 2 + sixteenth * 2) {
-                    if x < width / 2 && y < height / 2 {
+            for x in (width / 2 - sixteenth * 7)..=(width / 2 + sixteenth * 2) {
+                for y in (height / 2 - sixteenth * 7)..=(height / 2 + sixteenth * 2) {
+                    if x < width / 2 + sixteenth && y < height / 2 + sixteenth {
                         continue;
                     }
                     grid[(x, y)].visited = true;

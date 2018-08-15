@@ -57,7 +57,7 @@ impl<Item: Default + Clone> Grid<(usize, usize)> for SquareGrid<Item> {
         let y_distance =
             u32::try_from((i64::try_from(a_y).unwrap() - i64::try_from(b_y).unwrap()).abs())
                 .unwrap();
-        x_distance + y_distance - x_distance.min(y_distance)
+        x_distance.max(y_distance)
     }
 }
 

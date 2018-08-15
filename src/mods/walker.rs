@@ -59,6 +59,7 @@ where
             .into_iter()
             .filter(|neighbour| self.grid[*neighbour].visited == false)
             .collect();
+
         let preferred = (self.strategy)(unvisited, self.end_point, &self.grid);
         if preferred.len() > 0 {
             let chosen = rng.choose(&preferred).unwrap();
