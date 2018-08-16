@@ -1,9 +1,9 @@
 //! tprime wasm library
-#![feature(rust_2018_preview, rust_2018_idioms, try_from)]
+#![feature(rust_2018_preview, try_from)]
 #![warn(missing_docs, missing_debug_implementations)]
 
 mod mods;
-use self::mods::*;
+use self::mods::pathfinding;
 
 use serde_derive::Serialize;
 use serdebug::SerDebug;
@@ -11,8 +11,6 @@ use serdebug::SerDebug;
 use std::convert::TryFrom;
 
 use log::{debug, error, info, log, trace, warn, Log};
-
-use self::mods::grid::Grid;
 
 use js_sys;
 use rand::distributions::{Distribution, Range};
@@ -22,16 +20,16 @@ use rand_core::block::BlockRng;
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 #[derive(Serialize, SerDebug)]
-struct Output<'a> {
+struct Output {
     timeout: u32,
     width: u32,
     height: u32,
-    lines: Vec<OutputLine<'a>>,
+    lines: Vec<OutputLine>,
 }
 
 #[derive(Serialize, SerDebug)]
-struct OutputLine<'a> {
-    color: &'a str,
+struct OutputLine {
+    color: String,
     width: f64,
     points: Vec<(f64, f64)>,
 }
@@ -50,17 +48,11 @@ extern "C" {
 
 /// The root application state, exposed to JavaScript.
 #[wasm_bindgen]
-#[derive(Serialize, SerDebug)]
 pub struct Application {
     render_scale: u32,
     width: u32,
     height: u32,
 
-    #[serde(with = "mods::ellipsis_serializer")]
-    walkers:
-        Vec<mods::walker::Walker<(usize, usize), square_grid::SquareGrid<mods::walker::NodeInfo>>>,
-
-    #[serde(with = "mods::ellipsis_serializer")]
     rng: BlockRng<ChaChaCore>,
 }
 
@@ -90,83 +82,8 @@ impl Application {
         let width = 32;
         let height = 32;
 
-        type StrategyFn = fn(
-            neighbours: Vec<(usize, usize)>,
-            target: (usize, usize),
-            grid: &square_grid::SquareGrid<walker::NodeInfo>,
-        ) -> Vec<(usize, usize)>;
-
-        let greedy: StrategyFn = |neighbours, target, grid| {
-            let mut min_distance = u32::max_value();
-            for neighbour in neighbours.iter() {
-                let distance = grid.min_distance(*neighbour, target);
-                if distance < min_distance {
-                    min_distance = distance;
-                }
-            }
-            neighbours
-                .into_iter()
-                .filter(|neighbour| min_distance == grid.min_distance(*neighbour, target))
-                .collect()
-        };
-
-        let mindless: StrategyFn = |neighbours, _, _| neighbours;
-
-        let clockwise: StrategyFn = |neighbours, _, _| neighbours.into_iter().take(1).collect();
-
-        let sixteenth = width.min(height) / 16;
-
-        let grid_with_hole = || {
-            let mut grid = square_grid::SquareGrid::<walker::NodeInfo>::new(width, height);
-
-            for x in (width / 2 - sixteenth * 6)..=(width / 2 + sixteenth * 6) {
-                for y in 0..=(height / 2 + sixteenth * 5) {
-                    if x < width / 2 + sixteenth * 5 && y < height / 2 + sixteenth * 4 {
-                        continue;
-                    }
-                    grid[(x, y)].visited = true;
-                }
-            }
-
-            grid
-        };
-
-        let walkers = vec![
-            walker::Walker::new(
-                grid_with_hole(),
-                (sixteenth, sixteenth),
-                (width - sixteenth - 1, height - sixteenth - 1),
-                clockwise,
-            ),
-            walker::Walker::new(
-                grid_with_hole(),
-                (sixteenth, sixteenth),
-                (width - sixteenth - 1, height - sixteenth - 1),
-                mindless,
-            ),
-            walker::Walker::new(
-                grid_with_hole(),
-                (sixteenth, sixteenth),
-                (width - sixteenth - 1, height - sixteenth - 1),
-                greedy,
-            ),
-            walker::Walker::new(
-                grid_with_hole(),
-                (sixteenth, sixteenth),
-                (width - sixteenth - 1, height - sixteenth - 1),
-                greedy,
-            ),
-            walker::Walker::new(
-                grid_with_hole(),
-                (sixteenth, sixteenth),
-                (width - sixteenth - 1, height - sixteenth - 1),
-                greedy,
-            ),
-        ];
-
         Application {
             rng,
-            walkers,
             width: u32::try_from(width).unwrap(),
             height: u32::try_from(height).unwrap(),
             render_scale: 32,
@@ -176,46 +93,13 @@ impl Application {
     pub fn tick(&mut self) -> JsValue {
         let width = self.width * self.render_scale;
         let height = self.height * self.render_scale;
-        let mut any_running = false;
-
-        for ref mut walker in self.walkers.iter_mut() {
-            let warp_factor = 1;
-            for _ in 0..(warp_factor - 1) {
-                walker.step(&mut self.rng);
-            }
-
-            let running = walker.step(&mut self.rng);
-            if running {
-                any_running = true;
-            }
-        }
+        let any_running = false;
 
         JsValue::from_serde(&Output {
             timeout: if any_running { 0 } else { 4000 },
             width,
             height,
-            lines: self
-                .walkers
-                .iter()
-                .enumerate()
-                .map(|(i, walker)| OutputLine {
-                    color: [
-                        "rgba(0, 0, 100, 0.875)",
-                        "rgba(100, 0, 0, 0.875)",
-                        "rgba(200, 100, 50, 0.875)",
-                        "rgba(100, 50, 200, 0.875)",
-                        "rgba(50, 200, 100, 0.875)",
-                    ][i % 5],
-                    width: 0.5 * (self.render_scale as f64),
-                    points: walker
-                        .current_path()
-                        .iter()
-                        .map(|(x, y)| {
-                            let xp = ((*x as u32) * self.render_scale) as f64;
-                            let yp = ((*y as u32) * self.render_scale) as f64;
-                            (xp, yp)
-                        }).collect(),
-                }).collect(),
+            lines: vec![],
         }).unwrap()
     }
 }
