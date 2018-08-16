@@ -298,7 +298,15 @@ impl Default for AStarPathfinder {
                 let mut array = Array2D::<AStarCell>::new(width, height);
                 array[origin].state = AStarCellState::Blocked;
 
-                for x in 3..=27 {
+                for x in 0..=16 {
+                    array[(x, 8)].state = AStarCellState::Blocked;
+                }
+
+                for x in 3..=22 {
+                    array[(x, 12)].state = AStarCellState::Blocked;
+                }
+
+                for x in 12..=31 {
                     array[(x, 16)].state = AStarCellState::Blocked;
                 }
 
