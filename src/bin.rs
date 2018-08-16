@@ -4,6 +4,9 @@
 
 use env_logger;
 
+use serde_derive::Serialize;
+use serdebug::SerDebug;
+
 mod mods;
 use self::mods::square_grid::SquareGrid;
 

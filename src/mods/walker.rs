@@ -3,26 +3,37 @@ use std::ops::IndexMut;
 
 use super::grid::Grid;
 
+use serde::ser::Serialize;
+use serde_derive::Serialize;
+use serdebug::SerDebug;
+
+use log::{debug, error, info, log, trace, warn, Log};
+
 #[derive(Default, Clone)]
 pub struct NodeInfo {
     pub visited: bool,
 }
 
+#[derive(Serialize, SerDebug)]
 pub struct Walker<IndexType, GridType>
 where
-    IndexType: Copy + Debug + PartialEq,
-    GridType: Grid<IndexType> + IndexMut<IndexType, Output = NodeInfo> + Debug,
+    IndexType: Copy + Debug + PartialEq + Serialize,
+    GridType: Grid<IndexType> + IndexMut<IndexType, Output = NodeInfo> + Debug + Serialize,
 {
     grid: GridType,
     end_point: IndexType,
+
+    #[serde(with = "super::ellipsis_serializer")]
     current_path: Vec<IndexType>,
+
+    #[serde(with = "super::ellipsis_serializer")]
     strategy: fn(neighbours: Vec<IndexType>, target: IndexType, grid: &GridType) -> Vec<IndexType>,
 }
 
 impl<IndexType, GridType> Walker<IndexType, GridType>
 where
-    IndexType: Copy + Debug + PartialEq,
-    GridType: Grid<IndexType> + IndexMut<IndexType, Output = NodeInfo> + Debug,
+    IndexType: Copy + Debug + PartialEq + Serialize,
+    GridType: Grid<IndexType> + IndexMut<IndexType, Output = NodeInfo> + Debug + Serialize,
 {
     pub fn new(
         mut grid: GridType,
@@ -33,12 +44,14 @@ where
     ) -> Self {
         grid[start_point].visited = true;
         let current_path = vec![start_point];
-        Self {
+        let s = Self {
             grid,
             end_point,
             current_path,
             strategy,
-        }
+        };
+        info!("Initialized {:?}.", s);
+        s
     }
 
     /// Advances the pathfinding by a single step.
