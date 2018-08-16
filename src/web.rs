@@ -1,6 +1,6 @@
 //! tprime wasm library
 #![feature(rust_2018_preview, try_from)]
-#![warn(missing_docs, missing_debug_implementations)]
+#![warn(missing_docs)]
 
 mod mods;
 use self::mods::pathfinding;
@@ -10,10 +10,10 @@ use serdebug::SerDebug;
 
 use std::convert::TryFrom;
 
+#[allow(unused_imports)]
 use log::{debug, error, info, log, trace, warn, Log};
 
 use js_sys;
-use rand::distributions::{Distribution, Range};
 use rand::prng::chacha::ChaChaCore;
 use rand::SeedableRng;
 use rand_core::block::BlockRng;
@@ -29,7 +29,7 @@ struct Output {
 
 #[derive(Serialize, SerDebug)]
 struct OutputLine {
-    color: String,
+    color: &'static str,
     width: f64,
     points: Vec<(f64, f64)>,
 }
@@ -54,6 +54,8 @@ pub struct Application {
     height: u32,
 
     rng: BlockRng<ChaChaCore>,
+
+    pathfinders: Vec<pathfinding::AStarPathfinder>,
 }
 
 static LOGGER: &'static (dyn log::Log + 'static) = &WebConsoleLogger;
@@ -87,19 +89,69 @@ impl Application {
             width: u32::try_from(width).unwrap(),
             height: u32::try_from(height).unwrap(),
             render_scale: 32,
+            pathfinders: vec![pathfinding::AStarPathfinder::default()],
         }
     }
 
     pub fn tick(&mut self) -> JsValue {
         let width = self.width * self.render_scale;
         let height = self.height * self.render_scale;
-        let any_running = false;
+        let mut any_working = false;
+
+        let scale = self.render_scale;
+        let scale_point = |(x, y): &(usize, usize)| -> (f64, f64) {
+            let xp = ((*x as u32) * scale + (scale / 2)) as f64;
+            let yp = ((*y as u32) * scale + (scale / 2)) as f64;
+            (xp, yp)
+        };
+
+        let mut lines = vec![];
+
+        for (i, pathfinder) in self.pathfinders.iter_mut().enumerate() {
+            if pathfinder.working() {
+                any_working = true;
+                pathfinder.step();
+            }
+
+            for ((x, y), info) in pathfinder.data().iter() {
+                use self::mods::pathfinding::AStarCellState::*;
+                let (xp, yp) = scale_point(&(x, y));
+                match info.state() {
+                    Blocked => {
+                        lines.push(OutputLine {
+                            color: "rgba(192, 0, 64, 0.875)",
+                            width: 1.0 * (scale as f64),
+                            points: vec![(xp, yp), (xp, yp)],
+                        });
+                    }
+                    VisitedFrom(position) => {
+                        lines.push(OutputLine {
+                            color: "rgba(128, 128, 64, 0.875)",
+                            width: 0.25 * (scale as f64),
+                            points: vec![scale_point(&position), (xp, yp)],
+                        });
+                    }
+                    Free => {}
+                }
+            }
+
+            lines.push(OutputLine {
+                color: "rgba(50, 200, 50, 0.875)",
+                width: 0.5 * (scale as f64),
+                points: pathfinder
+                    .find_path()
+                    .unwrap()
+                    .iter()
+                    .map(scale_point)
+                    .collect(),
+            });
+        }
 
         JsValue::from_serde(&Output {
-            timeout: if any_running { 0 } else { 4000 },
+            timeout: if any_working { 0 } else { 4000 },
             width,
             height,
-            lines: vec![],
+            lines,
         }).unwrap()
     }
 }

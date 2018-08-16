@@ -1,16 +1,22 @@
 //! tprime binary
 #![feature(rust_2018_preview, try_from)]
-#![warn(missing_docs, missing_debug_implementations)]
+#![warn(missing_docs)]
 
 use env_logger;
-
-use serde_derive::Serialize;
-use serdebug::SerDebug;
 
 mod mods;
 use self::mods::pathfinding;
 
 fn main() {
     env_logger::init();
-    println!("hello world");
+
+    let mut pathfinder = pathfinding::AStarPathfinder::default();
+    let path = pathfinder.find_path();
+
+    println!("AStarPathfinder::default().find_path == {:?}", path);
+}
+
+#[test]
+fn test_main() {
+    main();
 }
