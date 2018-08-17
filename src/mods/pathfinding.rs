@@ -115,6 +115,8 @@ pub struct AStarPath {
     cost_from_origin: Distance,
     /// Our heuristic's lower bound on the cost to the target.
     min_cost_to_target: Distance,
+
+    diagonless_distance_to_target: Distance,
 }
 
 impl AStarPath {
@@ -122,7 +124,12 @@ impl AStarPath {
         // Exclude cost_from_origin and you get dijkstra’s (prioritize options that seem closer to target).
         // Exclude min_cost_to_target and you get breadth-first-search (prioritize options close to source).
         // Include both and we have A*.
-        self.cost_from_origin + self.min_cost_to_target
+        let a_star = self.cost_from_origin + self.min_cost_to_target;
+        let dijkstras = self.min_cost_to_target;
+        let bfs = self.cost_from_origin;
+        let dfs = Distance::max_value() / 2 - self.cost_from_origin;
+
+        a_star
     }
 
     fn default_hash(&self) -> u64 {
@@ -135,11 +142,24 @@ impl AStarPath {
 /// The priority of exploring this path relative to other potential paths.
 impl Ord for AStarPath {
     fn cmp(&self, other: &Self) -> Ordering {
-        let cost_ordering = self.min_cost().cmp(&other.min_cost());
+        let cost_ordering = self.min_cost().cmp(&other.min_cost()).reverse();
+
+        let min_cost_to_target_ordering = self
+            .min_cost_to_target
+            .cmp(&other.min_cost_to_target)
+            .reverse();
+
+        let min_diagonless_distance_to_target_ordering = self
+            .diagonless_distance_to_target
+            .cmp(&other.diagonless_distance_to_target)
+            .reverse();
 
         let arbitrary_stable_ordering = self.default_hash().cmp(&other.default_hash());
 
-        cost_ordering.then(arbitrary_stable_ordering).reverse()
+        cost_ordering
+            .then(min_cost_to_target_ordering)
+            .then(min_diagonless_distance_to_target_ordering)
+            .then(arbitrary_stable_ordering)
     }
 }
 
@@ -240,6 +260,10 @@ impl AStarPathfinder {
                         head: position,
                         cost_from_origin: path.cost_from_origin + 1,
                         min_cost_to_target: Self::min_distance(position, self.target),
+                        diagonless_distance_to_target: Self::diagonless_distance(
+                            position,
+                            self.target,
+                        ),
                     }).collect();
 
                 self.frontier.extend(new_frontier);
@@ -285,6 +309,10 @@ impl AStarPathfinder {
     fn min_distance(a: Position, b: Position) -> Distance {
         (a.0.max(b.0) - a.0.min(b.0)).max(a.1.max(b.1) - a.1.min(b.1))
     }
+
+    fn diagonless_distance(a: Position, b: Position) -> Distance {
+        (a.0.max(b.0) - a.0.min(b.0)) + (a.1.max(b.1) - a.1.min(b.1))
+    }
 }
 
 impl Default for AStarPathfinder {
@@ -302,16 +330,16 @@ impl Default for AStarPathfinder {
                 let mut array = Array2D::<AStarCell>::new(width, height);
                 array[origin].state = AStarCellState::Blocked;
 
-                for x in 0..=16 {
-                    array[(x, 8)].state = AStarCellState::Blocked;
+                for y in 10..=31 {
+                    array[(20, y)].state = AStarCellState::Blocked;
                 }
 
-                for x in 3..=22 {
-                    array[(x, 12)].state = AStarCellState::Blocked;
-                }
-
-                for x in 12..=31 {
-                    array[(x, 16)].state = AStarCellState::Blocked;
+                for x in 2..30 {
+                    for y in 2..30 {
+                        if (x * 5 + y * 7) % ((x ^ y) % 5 + 1) == 3 {
+                            array[(x, y)].state = AStarCellState::Blocked;
+                        }
+                    }
                 }
 
                 array
@@ -319,6 +347,7 @@ impl Default for AStarPathfinder {
             frontier: BinaryHeap::from(vec![AStarPath {
                 head: origin,
                 cost_from_origin: 0,
+                diagonless_distance_to_target: Self::diagonless_distance(origin, target),
                 min_cost_to_target: Self::min_distance(origin, target),
             }]),
             working: true,

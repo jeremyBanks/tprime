@@ -69,6 +69,7 @@ impl Application {
         log::set_max_level(log::LevelFilter::Trace);
 
         set_title("t′");
+        set_text("A*");
         debug!("Logging to web console at level {:?}.", log::max_level());
 
         let timestamp_js = js_sys::Date::now();

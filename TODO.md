@@ -1,0 +1,2 @@
+- Generalize geometry from just 8-way grid to add 4-way grid (and in future, hex grid).
+- Generalize strategy in some way to switch between BFS, Dijkstra's, A*, DFS.

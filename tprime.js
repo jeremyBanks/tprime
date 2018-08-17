@@ -24,6 +24,11 @@ export function __wbg_setTitle_c103b36468a67b49(arg0, arg1) {
     setTitle(varg0);
 }
 
+export function __wbg_setText_9d22b8a5cd3ae9c1(arg0, arg1) {
+    let varg0 = getStringFromWasm(arg0, arg1);
+    setText(varg0);
+}
+
 const stack = [];
 
 const slab = [{ obj: undefined }, { obj: null }, { obj: true }, { obj: false }];
