@@ -129,7 +129,7 @@ impl AStarPath {
         let bfs = self.cost_from_origin;
         let dfs = Distance::max_value() / 2 - self.cost_from_origin;
 
-        a_star
+        dijkstras
     }
 
     fn default_hash(&self) -> u64 {
