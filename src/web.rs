@@ -82,8 +82,8 @@ impl Application {
         debug!("Seeding RNG with {:?} from timestamp {}.", seed, timestamp);
         let rng = BlockRng::new(ChaChaCore::from_seed(seed));
 
-        let width = 32;
-        let height = 32;
+        let width = 64;
+        let height = 64;
 
         Application {
             rng,
@@ -100,6 +100,7 @@ impl Application {
         let mut any_working = false;
 
         let scale = self.render_scale;
+        let scale_f64 = scale as f64;
         let scale_point = |(x, y): &(usize, usize)| -> (f64, f64) {
             let xp = ((*x as u32) * scale + (scale / 2)) as f64;
             let yp = ((*y as u32) * scale + (scale / 2)) as f64;
@@ -120,14 +121,20 @@ impl Application {
                 match info.state() {
                     Blocked => {
                         lines.push(OutputLine {
-                            color: "rgba(192, 0, 64, 0.875)",
-                            width: 1.0 * (scale as f64),
-                            points: vec![(xp, yp), (xp, yp)],
+                            color: "rgba(192, 0, 64, 1.0)",
+                            width: 0.3 * scale_f64,
+                            points: vec![
+                                (xp - scale_f64 / 3., yp - scale_f64 / 3.),
+                                (xp + scale_f64 / 3., yp - scale_f64 / 3.),
+                                (xp + scale_f64 / 3., yp + scale_f64 / 3.),
+                                (xp - scale_f64 / 3., yp + scale_f64 / 3.),
+                                (xp - scale_f64 / 3., yp - scale_f64 / 3.),
+                            ],
                         });
                     }
                     VisitedFrom(position) => {
                         lines.push(OutputLine {
-                            color: "rgba(192, 192, 0, 0.875)",
+                            color: "rgba(192, 192, 64, 1.0)",
                             width: 0.125 * (scale as f64),
                             points: vec![scale_point(&position), (xp, yp)],
                         });
@@ -137,7 +144,7 @@ impl Application {
             }
 
             lines.push(OutputLine {
-                color: "rgba(50, 200, 50, 0.875)",
+                color: "rgba(64, 192, 64, 1.0)",
                 width: 0.5 * (scale as f64),
                 points: pathfinder
                     .peek_path()

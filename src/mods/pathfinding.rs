@@ -317,8 +317,8 @@ impl AStarPathfinder {
 
 impl Default for AStarPathfinder {
     fn default() -> Self {
-        let width = 32;
-        let height = 32;
+        let width = 64;
+        let height = 64;
         let origin = (1, 1);
         let target = (width - 2, height - 2);
         Self {
@@ -334,8 +334,12 @@ impl Default for AStarPathfinder {
                     array[(20, y)].state = AStarCellState::Blocked;
                 }
 
-                for x in 2..30 {
-                    for y in 2..30 {
+                for y in 32..=52 {
+                    array[(32, y)].state = AStarCellState::Blocked;
+                }
+
+                for x in 0..width {
+                    for y in 0..height {
                         if (x * 5 + y * 7) % ((x ^ y) % 5 + 1) == 3 {
                             array[(x, y)].state = AStarCellState::Blocked;
                         }
