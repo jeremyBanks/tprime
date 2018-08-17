@@ -112,7 +112,9 @@ impl Application {
         for (i, pathfinder) in self.pathfinders.iter_mut().enumerate() {
             if pathfinder.working() {
                 any_working = true;
-                pathfinder.step();
+                for _ in 0..6 {
+                    pathfinder.step();
+                }
             }
 
             for ((x, y), info) in pathfinder.data().iter() {

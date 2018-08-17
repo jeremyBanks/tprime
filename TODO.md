@@ -1,2 +1,6 @@
 - Generalize geometry from just 8-way grid to add 4-way grid (and in future, hex grid).
 - Generalize strategy in some way to switch between BFS, Dijkstra's, A*, DFS.
+- Set up a demo that switches between the possibilities, and a few different maps.
+- Add more different terrain types than "clear" and "blocked". Mountains, roads?
+- Fill rects instead of drawing squares for tiles, so it doesn't need to be so fast.
+- Make the origin a distinct special case from Blocked so it doesn't look silly.
