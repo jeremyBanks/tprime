@@ -53,6 +53,7 @@ pub struct Application {
     width: u32,
     height: u32,
 
+    demo_iteration: usize,
     rng: BlockRng<ChaChaCore>,
 
     pathfinders: Vec<pathfinding::AStarPathfinder>,
@@ -69,7 +70,7 @@ impl Application {
         log::set_max_level(log::LevelFilter::Trace);
 
         set_title("t′");
-        set_text("A*");
+        // set_text("A*");
         debug!("Logging to web console at level {:?}.", log::max_level());
 
         let timestamp_js = js_sys::Date::now();
@@ -87,10 +88,11 @@ impl Application {
 
         Application {
             rng,
+            demo_iteration: 0,
             width: u32::try_from(width).unwrap(),
             height: u32::try_from(height).unwrap(),
             render_scale: 32,
-            pathfinders: vec![pathfinding::AStarPathfinder::default()],
+            pathfinders: vec![pathfinding::AStarPathfinder::demo(0)],
         }
     }
 
@@ -112,8 +114,15 @@ impl Application {
         for (i, pathfinder) in self.pathfinders.iter_mut().enumerate() {
             if pathfinder.working() {
                 any_working = true;
-                for _ in 0..6 {
-                    pathfinder.step();
+
+                pathfinder.get_path();
+
+                // for _ in 0..128 {
+                //     pathfinder.step();
+                // }
+
+                if !pathfinder.working() {
+                    any_working = false;
                 }
             }
 
@@ -155,10 +164,15 @@ impl Application {
                     .map(scale_point)
                     .collect(),
             });
+
+            if !pathfinder.working() {
+                self.demo_iteration += 1;
+                *pathfinder = pathfinding::AStarPathfinder::demo(self.demo_iteration);
+            }
         }
 
         JsValue::from_serde(&Output {
-            timeout: if any_working { 0 } else { 4000 },
+            timeout: if any_working { 250 } else { 250 },
             width,
             height,
             lines,

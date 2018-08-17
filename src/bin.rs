@@ -17,6 +17,7 @@ fn main() {
 }
 
 #[test]
+#[ignore]
 fn test_main() {
     main();
 }

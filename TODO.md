@@ -4,3 +4,4 @@
 - Add more different terrain types than "clear" and "blocked". Mountains, roads?
 - Fill rects instead of drawing squares for tiles, so it doesn't need to be so fast.
 - Make the origin a distinct special case from Blocked so it doesn't look silly.
+- Apply this somehow?

@@ -313,6 +313,35 @@ impl AStarPathfinder {
     fn diagonless_distance(a: Position, b: Position) -> Distance {
         (a.0.max(b.0) - a.0.min(b.0)) + (a.1.max(b.1) - a.1.min(b.1))
     }
+
+    pub fn demo(demo_iteration: usize) -> Self {
+        let mut self_ = Self::default();
+
+        let ref mut array = &mut self_.data;
+        array[self_.origin].state = AStarCellState::Blocked;
+
+        for x in 0..self_.width {
+            for y in 0..self_.height {
+                if x + y < 5 {
+                    continue;
+                }
+
+                if (self_.width - x) + (self_.height - y) < 5 {
+                    continue;
+                }
+
+                if ((x) ^ ((y + 3) % 2) ^ demo_iteration) % (1 + x / 2 + y / 5) <= 0 {
+                    array[(x, y)].state = AStarCellState::Blocked;
+                }
+
+                if ((x / 8) + ((y * 3) / 8)) % 5 == 0 {
+                    array[(x, y)].state = AStarCellState::Blocked;
+                }
+            }
+        }
+
+        self_
+    }
 }
 
 impl Default for AStarPathfinder {
@@ -326,35 +355,7 @@ impl Default for AStarPathfinder {
             height,
             origin,
             target,
-            data: {
-                let mut array = Array2D::<AStarCell>::new(width, height);
-                array[origin].state = AStarCellState::Blocked;
-
-                for y in 10..=31 {
-                    array[(20, y)].state = AStarCellState::Blocked;
-                }
-
-                for y in 32..=52 {
-                    array[(32, y)].state = AStarCellState::Blocked;
-                }
-
-                for x in 0..width {
-                    for y in 0..height {
-                        if (x * 5 + y * 7) % ((x ^ y) % 5 + 1) == 3 {
-                            array[(x, y)].state = AStarCellState::Blocked;
-                        }
-
-                        if (((x % 36) as f64 - 16.).powf(2.) + ((y % 30) as f64 - 16.).powf(2.))
-                            .sqrt()
-                            < 8.0
-                        {
-                            array[(x, y)].state = AStarCellState::Blocked;
-                        }
-                    }
-                }
-
-                array
-            },
+            data: Array2D::<AStarCell>::new(width, height),
             frontier: BinaryHeap::from(vec![AStarPath {
                 head: origin,
                 cost_from_origin: 0,
