@@ -129,7 +129,7 @@ impl AStarPath {
         let bfs = self.cost_from_origin;
         let dfs = Distance::max_value() / 2 - self.cost_from_origin;
 
-        dijkstras
+        a_star
     }
 
     fn default_hash(&self) -> u64 {
@@ -341,6 +341,13 @@ impl Default for AStarPathfinder {
                 for x in 0..width {
                     for y in 0..height {
                         if (x * 5 + y * 7) % ((x ^ y) % 5 + 1) == 3 {
+                            array[(x, y)].state = AStarCellState::Blocked;
+                        }
+
+                        if (((x % 36) as f64 - 16.).powf(2.) + ((y % 30) as f64 - 16.).powf(2.))
+                            .sqrt()
+                            < 8.0
+                        {
                             array[(x, y)].state = AStarCellState::Blocked;
                         }
                     }
