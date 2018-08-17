@@ -119,6 +119,9 @@ pub struct AStarPath {
 
 impl AStarPath {
     fn min_cost(&self) -> Distance {
+        // Exclude cost_from_origin and you get dijkstra’s (prioritize options that seem closer to target).
+        // Exclude min_cost_to_target and you get breadth-first-search (prioritize options close to source).
+        // Include both and we have A*.
         self.cost_from_origin + self.min_cost_to_target
     }
 
@@ -133,6 +136,7 @@ impl AStarPath {
 impl Ord for AStarPath {
     fn cmp(&self, other: &Self) -> Ordering {
         let cost_ordering = self.min_cost().cmp(&other.min_cost());
+
         let arbitrary_stable_ordering = self.default_hash().cmp(&other.default_hash());
 
         cost_ordering.then(arbitrary_stable_ordering).reverse()
@@ -171,16 +175,16 @@ impl AStarPathfinder {
         &self.data
     }
 
-    pub fn find_path(&mut self) -> Option<Vec<Position>> {
+    pub fn get_path(&mut self) -> Option<Vec<Position>> {
         while self.working {
             self.step();
         }
 
-        if let Some(path) = self.frontier.peek() {
-            // When we're done, we either have no remaining paths, or our
-            // resulting complete path is on top of the heap.
-            assert_eq!(path.head, self.target);
+        self.peek_path()
+    }
 
+    pub fn peek_path(&mut self) -> Option<Vec<Position>> {
+        if let Some(path) = self.frontier.peek() {
             let mut full_path = Vec::new();
             let mut current = path.head;
 

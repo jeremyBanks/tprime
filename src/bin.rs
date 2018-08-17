@@ -11,7 +11,7 @@ fn main() {
     env_logger::init();
 
     let mut pathfinder = pathfinding::AStarPathfinder::default();
-    let path = pathfinder.find_path();
+    let path = pathfinder.get_path();
 
     println!("AStarPathfinder::default().find_path == {:?}", path);
 }

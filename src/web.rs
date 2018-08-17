@@ -126,8 +126,8 @@ impl Application {
                     }
                     VisitedFrom(position) => {
                         lines.push(OutputLine {
-                            color: "rgba(128, 128, 64, 0.875)",
-                            width: 0.25 * (scale as f64),
+                            color: "rgba(192, 192, 0, 0.875)",
+                            width: 0.125 * (scale as f64),
                             points: vec![scale_point(&position), (xp, yp)],
                         });
                     }
@@ -139,7 +139,7 @@ impl Application {
                 color: "rgba(50, 200, 50, 0.875)",
                 width: 0.5 * (scale as f64),
                 points: pathfinder
-                    .find_path()
+                    .peek_path()
                     .unwrap()
                     .iter()
                     .map(scale_point)
